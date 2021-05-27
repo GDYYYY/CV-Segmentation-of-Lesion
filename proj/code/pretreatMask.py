@@ -48,22 +48,27 @@ def match(template, target):
         return np.int32(dst)
     else:
         print("Not enough matches are found - %d/%d" % (len(good), MIN_MATCH_COUNT))
-        # matchesMask = None
+    #     matchesMask = None
     # draw_params = dict(matchColor=(0, 255, 0),
     #                    singlePointColor=None,
     #                    matchesMask=matchesMask,
     #                    flags=2)
     # result = cv2.drawMatches(template, kp1, target, kp2, good, None, **draw_params)
     # plt.imshow(result, 'gray')
-    # plt.imshow(target)
+    # # plt.imshow(target)
     # plt.show()
 
 
-def focalSegment():
-    # 对蜂窝的处理仅需修改相应路径及筛选颜色
-    reticular_path = "../reticular"
-    pretreat_path = "../pretreat/reticular"
-    pretreat_mask_path = "../pretreat/reticularMask"
+def focalSegment(isReticular):
+    # 对不同病灶的处理仅需修改参数isReticular，会相应修改路径、筛选颜色、大小等
+    if isReticular:
+        reticular_path = "../reticular"
+        pretreat_path = "../pretreat/reticular"
+        pretreat_mask_path = "../pretreat/reticularMask"
+    else:
+        reticular_path = "../honeycombing"
+        pretreat_path = "../pretreat/honeycombing"
+        pretreat_mask_path = "../pretreat/honeycombingMask"
 
     for root, dirs, files in os.walk(reticular_path):
         for filename in files:
@@ -88,19 +93,22 @@ def focalSegment():
 
                 # 匹配缩放
                 # match(gray, target)
-                standard = cv2.resize(standard, [470, 346])
+                # continue
 
-                # print(min_loc)
-                # print(target.shape[:2])
-                # cv2.rectangle(target, min_loc, (min_loc[0] + twidth, min_loc[1] + theight), (225, 225, 225), 2)
+                if isReticular:
+                    standard = cv2.resize(standard, (470, 346))  # reticular
+                else:
+                    standard = cv2.resize(standard, (529, 391))  # honeycombing
 
                 hsv = cv2.cvtColor(standard, cv2.COLOR_BGR2HSV)
-                # # 提取黄色
-                low_hsv = np.array([26, 43, 46])
-                high_hsv = np.array([34, 255, 255])
-                # 提取紫色
-                # low_hsv = np.array([125, 43, 46])
-                # high_hsv = np.array([155, 255, 255])
+                if isReticular:
+                    # 提取黄色
+                    low_hsv = np.array([26, 43, 46])
+                    high_hsv = np.array([34, 255, 255])
+                else:
+                    # 提取紫色
+                    low_hsv = np.array([125, 43, 46])
+                    high_hsv = np.array([155, 255, 255])
                 mask = cv2.inRange(hsv, lowerb=low_hsv, upperb=high_hsv)
                 # mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
 
@@ -113,9 +121,15 @@ def focalSegment():
                 # 新建与origin对齐的mask
                 row_size, col_size = origin.shape[:2]
                 newmask = np.zeros(origin.shape, dtype=np.uint8)
+
+                small_col_size = min(small_col_size, col_size)
                 for i in range(small_row_size - 1):
                     for j in range(small_col_size - 1):
-                        newmask[i + 82][j + 20] = mask[i][j]
+                        if isReticular:
+                            newmask[i + 82][j + 20] = mask[i][j]  # reticular
+                        else:
+                            newmask[i + 60][j] = mask[i][j + 9]  # honeycombing
+
                 cv2.imwrite(os.path.join(pretreat_mask_path, originname), newmask)
 
                 # 匹配原图
@@ -125,24 +139,6 @@ def focalSegment():
                 origin[newmask == 0] = 0
                 cv2.imwrite(os.path.join(pretreat_path, originname), origin)
 
-            # # 读取肺实质图像
-            # path = os.path.join(root, filename)
-            # maskedImg = cv2.imread(path)
-            # # 读取原始图像
-            # imgPath = os.path.join(reticular_path, filename)
-            # img = cv2.imread(imgPath)
-            # # 生成灰度图用于处理
-            # gray = cv2.cvtColor(maskedImg, cv2.COLOR_BGR2GRAY)
-            # row_size, col_size = gray.shape
-
-            # # 生成直方图
-            # plot = list(filter(lambda a: a != 0, gray.flatten()))
-            # plt.hist(plot, bins=20)
-            # plt.show()
-            #
-            # # 输出最终病灶结果
-            # cv2.imwrite(r"../focalResults/" + filename, img)
-
 
 if __name__ == '__main__':
-    focalSegment()
+    focalSegment(isReticular=True)

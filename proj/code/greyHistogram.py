@@ -8,11 +8,11 @@ def focalSegment(isReticular):
     honeycombing_path = "../pretreat/honeycombing"
     origin_path = "../honeycombing_parenchyma"
     if isReticular:
-        mask_path = honeycombing_path
+        mask_path = reticular_path
         origin_path = "../reticular_parenchyma"
         result_path = "../reticular_result/"
     else:
-        mask_path = reticular_path
+        mask_path = honeycombing_path
         origin_path = "../honeycombing_parenchyma"
         result_path = "../honeycombing_result/"
 
@@ -36,7 +36,7 @@ def focalSegment(isReticular):
             if isReticular:
                 low, high = (170, 200)
             else:
-                low, high = (60, 100)
+                low, high = (200, 255)
 
             for i in range(row_size):
                 for j in range(col_size):
@@ -48,4 +48,4 @@ def focalSegment(isReticular):
 
 
 if __name__ == '__main__':
-    focalSegment(isReticular=True)
+    focalSegment(isReticular=False)

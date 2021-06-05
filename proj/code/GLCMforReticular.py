@@ -8,11 +8,12 @@ import skimage.morphology as mplg
 gray_level = 16  # 灰度级数
 typeString = ['contrast', 'energy', 'entropy', 'homogeneity']
 
-window_w, window_h = 7, 7  # 窗口大小
-dx, dy = 2, 2  # 灰度共生矩阵计算方向
+window_w, window_h = 5, 5  # 窗口大小
+dx, dy = 0, 1  # 灰度共生矩阵计算方向
 
-featureType = 3  # 对应typeString选择计算的特征值
-low, high = 0,10  # 筛选区域，保留特征值在(low,high)之间的小窗口
+featureType = 2  # 对应typeString选择计算的特征值
+lowNtp, highNtp = -11, 0  # 筛选区域，保留特征值在(low,high)之间的小窗口
+lowG, highG = 142, 280  # 灰度范围
 
 
 def getMaxGrayLevel(img):
@@ -84,6 +85,14 @@ def feature2gray(m, maxValue):
     return m
 
 
+def adverageGray(window):
+    sum = 0
+    for i in range(window_h):
+        for j in range(window_w):
+            sum += window[i][j]
+    return sum
+
+
 def focalSegment():
     origin_path = "../reticular_parenchyma"
     standard_path = "../pretreat/reticular"  # 标准答案
@@ -106,6 +115,7 @@ def focalSegment():
             # ntp = np.zeros(gray.shape[:2], dtype=int)
             # hom = np.zeros(gray.shape[:2], dtype=int)
             data = np.zeros(gray.shape[:2], dtype=int)
+            grayData = np.zeros(gray.shape[:2], dtype=int)
 
             # 按小区域计算GLCM
             hw = int(window_w / 2)
@@ -114,6 +124,9 @@ def focalSegment():
                 for j in range(window_w, width - window_w, window_h):
                     if gray[i][j] != 0:  # 提高计算效率
                         window = gray[i - hh:i + hh + 1, j - hw:j + hw + 1]
+                        # print(window)
+                        grayData[i - hh:i + hh + 1, j - hw:j + hw + 1] = adverageGray(window)
+                        # print(grayData[i - hh:i + hh + 1, j - hw:j + hw + 1])
                         glcm = getGLCM(window, dx, dy)
 
                         featureValue = feature(glcm)
@@ -125,9 +138,10 @@ def focalSegment():
                         data[i - hh:i + hh + 1, j - hw:j + hw + 1] = featureValue[featureType]
 
             compareImg = data
+            # img = feature2gray(data, -60)
 
             # # 生成直方图
-            # plot = list(filter(lambda a: a != 0, compareImg.flatten()))
+            # plot = list(filter(lambda a: a != 0, grayData.flatten()))
             # plt.hist(plot, bins=20)
             # plt.show()
 
@@ -135,10 +149,11 @@ def focalSegment():
             mask = np.zeros(gray.shape[:2], dtype=np.uint8)
             for i in range(height):
                 for j in range(width):
-                    if low < compareImg[i][j] < high:
+                    # print(grayData[i][j], compareImg[i][j])
+                    if lowG < grayData[i][j] < highG and lowNtp < compareImg[i][j] < highNtp:
                         mask[i][j] = 255
             # 填空隙
-            mask = mplg.closing(mask, np.ones((window_h + 1, window_w + 1)))
+            mask = mplg.closing(mask, mplg.disk(int(1.4 * window_h)))
             # mask = mplg.opening(mask, np.ones(( window_h, window_w)))
             img[mask == 0] = 0
 

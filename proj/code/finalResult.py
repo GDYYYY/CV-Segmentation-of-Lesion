@@ -6,7 +6,7 @@ import cv2
 import scipy.ndimage as ndimage
 
 answer_path = "../pretreat/reticular"
-result_path = "../reticular_result/contrast"
+result_path = "../reticular_result/entropy"
 final_path = "../reticular_result/final"
 origin_path = "../reticular"
 
@@ -34,7 +34,7 @@ def finalResult():
                     elif answer_gray[i][j] > 0 or result_gray[i][j] > 0:
                         union += 1
             ret = float(intersection) / float(union)
-            sum+=ret
+            sum += ret
             print(ret)
 
             # 上色
@@ -43,7 +43,8 @@ def finalResult():
                     if result_gray[i][j] > 0:
                         origin[i][j] = (144, 238, 144)
             cv2.imwrite(os.path.join(final_path, filename), origin)
-    print("average:"+str(sum/20))
+    print("average:" + str(sum / 20))
+
 
 if __name__ == '__main__':
     finalResult()

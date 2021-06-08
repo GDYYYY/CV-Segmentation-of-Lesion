@@ -9,8 +9,8 @@ def focalSegment(isReticular):
     origin_path = "../honeycombing_parenchyma"
     if isReticular:
         mask_path = reticular_path
-        origin_path = "../reticular_parenchyma"
-        result_path = "../reticular_result/"
+        origin_path = "../reticular_result/entropy"
+        result_path = "../reticular_result/final"
     else:
         mask_path = honeycombing_path
         origin_path = "../honeycombing_parenchyma"
@@ -34,7 +34,7 @@ def focalSegment(isReticular):
             # plt.show()
 
             if isReticular:
-                low, high = (170, 200)
+                low, high = (100, 255)
             else:
                 low, high = (200, 255)
 
@@ -48,4 +48,4 @@ def focalSegment(isReticular):
 
 
 if __name__ == '__main__':
-    focalSegment(isReticular=False)
+    focalSegment(isReticular=True)

@@ -101,42 +101,53 @@ def focalSegment(isReticular):
                     standard = cv2.resize(standard, (529, 391))  # honeycombing
 
                 hsv = cv2.cvtColor(standard, cv2.COLOR_BGR2HSV)
-                if isReticular:
-                    # 提取黄色
-                    low_hsv = np.array([26, 43, 46])
-                    high_hsv = np.array([34, 255, 255])
-                else:
-                    # 提取紫色
-                    low_hsv = np.array([125, 43, 46])
-                    high_hsv = np.array([155, 255, 255])
-                mask = cv2.inRange(hsv, lowerb=low_hsv, upperb=high_hsv)
+
+                # 提取黄色
+                low_hsv = np.array([26, 43, 46])
+                high_hsv = np.array([34, 255, 255])
+                reticularMask = cv2.inRange(hsv, lowerb=low_hsv, upperb=high_hsv)
+
+                # 提取紫色
+                low_hsv = np.array([125, 43, 46])
+                high_hsv = np.array([155, 255, 255])
+                honeyMask = cv2.inRange(hsv, lowerb=low_hsv, upperb=high_hsv)
                 # mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
 
                 # 去除左下角水印
                 # print(col_size, row_size)
-                small_row_size, small_col_size = mask.shape
+                small_row_size, small_col_size = reticularMask.shape
                 for i in range(small_row_size - 47, small_row_size):
                     for j in range(63):
-                        mask[i][j] = 0
+                        reticularMask[i][j] = 0
                 # 新建与origin对齐的mask
                 row_size, col_size = origin.shape[:2]
-                newmask = np.zeros(origin.shape, dtype=np.uint8)
+                newmaskR = np.zeros(origin.shape, dtype=np.uint8)
+                newmaskH = np.zeros(origin.shape, dtype=np.uint8)
 
                 small_col_size = min(small_col_size, col_size)
                 for i in range(small_row_size - 1):
                     for j in range(small_col_size - 1):
                         if isReticular:
-                            newmask[i + 82][j + 20] = mask[i][j]  # reticular
+                            newmaskR[i + 82][j + 20] = reticularMask[i][j]  # reticular
+                            newmaskH[i + 82][j + 20] = honeyMask[i][j]
                         else:
-                            newmask[i + 60][j] = mask[i][j + 9]  # honeycombing
+                            newmaskR[i + 60][j] = reticularMask[i][j + 9]
+                            newmaskH[i + 60][j] = honeyMask[i][j + 9]
 
-                cv2.imwrite(os.path.join(pretreat_mask_path, originname), newmask)
+                rpath = os.path.join(pretreat_mask_path, "reticular")
+                hpath = os.path.join(pretreat_mask_path, "honeycombing")
+                cv2.imwrite(os.path.join(rpath, originname), newmaskR)
+                cv2.imwrite(os.path.join(hpath, originname), newmaskH)
 
                 # 匹配原图
                 # standard[mask == 0] = (0, 0, 0)
                 # gray = cv2.cvtColor(standard, cv2.COLOR_BGR2GRAY)
                 # cv2.imwrite(os.path.join(pretreat_path, originname), gray)
-                origin[newmask == 0] = 0
+                if isReticular:
+                    origin[newmaskR == 0] = 0
+                else:
+                    origin[newmaskH == 0] = 0
+
                 cv2.imwrite(os.path.join(pretreat_path, originname), origin)
 
 

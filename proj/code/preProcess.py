@@ -20,7 +20,7 @@ def preprocess(path_isReticular, isReticular, open_radius, close_radius, label_s
             output_path = "../reticular_preprocess/reticular"
         else:
             skip = True
-            input_mask_path = "../pretreat/reticularMask/reticular"
+            input_mask_path = "../pretreat/reticularMask/honeycombing"
             output_path = "../reticular_preprocess/honeycombing"
     else:
         input_path = '../honeycombing_parenchyma'
@@ -112,4 +112,4 @@ def preprocess(path_isReticular, isReticular, open_radius, close_radius, label_s
 
 if __name__ == '__main__':
     print(3)
-    preprocess(False, 4, 10, 2000)
+    preprocess(False, False, 4, 10, 2000)

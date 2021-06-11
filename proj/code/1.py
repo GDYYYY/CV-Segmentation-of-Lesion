@@ -6,7 +6,7 @@ import cv2
 import scipy.ndimage as ndimage
 
 
-def function():
+def function(isHoneycombing):
     reticular_path = "../reticular"
     honeycombing_path = '../honeycombing'
     reticular_mask_path = "../reticular_mask"
@@ -14,11 +14,7 @@ def function():
     honeycombing_mask_path = "../honeycombing_mask"
     honeycombing_parenchyma_path = "../honeycombing_parenchyma"
 
-    reticular = "reticular"
-    honeycombing = "honeycombing"
-    type = reticular
-
-    if type == honeycombing:
+    if isHoneycombing:
         input_path = honeycombing_path
         mask_path = honeycombing_mask_path
         parenchyma_path = honeycombing_parenchyma_path
@@ -29,9 +25,13 @@ def function():
 
     for root, dirs, files in os.walk(input_path):
         for file in files:
+            if "snapshot" in file:
+                continue
             path = os.path.join(root, file)
             img = cv2.imread(path)
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+            # cv2.imwrite(os.path.join("../tmp", file), gray)
 
             low = np.min(gray)
             high = np.max(gray)
@@ -59,8 +59,18 @@ def function():
 
             binary = np.where(gray < thresh, 1, 0)
 
-            # hole = ndimage.binary_fill_holes(binary)
-            labeled = measure.label(binary)
+            # cv2.imwrite(os.path.join("../tmp", file), binary*255)
+            row, col = gray.shape
+            mask = np.zeros((row + 2, col + 2))
+            filled = np.uint8(binary)
+            cv2.floodFill(filled, np.uint8(mask), (0, 0), 0)
+            cv2.floodFill(filled, np.uint8(mask), (col - 1, row - 1), 0)
+            cv2.floodFill(filled, np.uint8(mask), (0, row - 1), 0)
+            cv2.floodFill(filled, np.uint8(mask), (col - 1, 0), 0)
+
+            # cv2.imwrite(os.path.join("../tmp", file), filled * 255)
+
+            labeled = measure.label(filled)
             closed = np.zeros(labeled.shape)
             count = len(np.unique(labeled))
             for i in range(count):
@@ -70,41 +80,34 @@ def function():
                 if size < 600 or size > 700:
                     closed += mask
             # closed = mplg.closing(binary, np.ones((2, 2)))
-            # closed = mplg.remove_small_objects(closed.astype(bool), 2000)
-            closed = mplg.closing(closed, np.ones((15, 15)))
-            closed = mplg.opening(closed, np.ones((5, 5)))
 
-            row, col = gray.shape
-            mask = np.zeros((row + 2, col + 2))
-            filled = np.uint8(closed)
-            cv2.floodFill(filled, np.uint8(mask), (0, 0), 0)
-            cv2.floodFill(filled, np.uint8(mask), (row - 1, col - 1), 0)
+            # cv2.imwrite(os.path.join("../tmp", file), closed * 255)
 
-            # dilated = mplg.dilation(filled, np.ones((40, 40)))
-            # labeled = mplg.label(dilated)
-            # mask_sum = np.zeros(labeled.shape)
-            # count = len(np.unique(labeled))
-            # for i in range(count):
-            #     mask = np.zeros(labeled.shape)
-            #     mask[labeled == i + 1] = 1
-            #     mask = mplg.closing(mask, np.ones((25, 25)))
-            #     mask = ndimage.binary_fill_holes(mask)
-            #     mask_sum += mask
-            # mask_sum = mplg.erosion(mask_sum, np.ones((40, 40)))
+            closed = mplg.closing(closed, mplg.disk(5))
 
-            # opened = mplg.erosion(filled, np.ones((55, 55)))
+            # cv2.imwrite(os.path.join("../tmp", file), closed * 255)
 
-            # hole = ndimage.binary_fill_holes(opened)
-            # hole = mplg.remove_small_objects(opened, 10000)
+            # closed = mplg.erosion(closed, np.ones((3, 3)))
+            # closed = mplg.dilation(closed, np.ones((9, 9)))
+            objected = mplg.remove_small_objects(closed.astype(bool), 500)
 
-            # binary = binary*255
-            # cv2.imwrite(os.path.join(out_path, file), binary)
-            output = filled * 255
+            # cv2.imwrite(os.path.join("../tmp", file), objected * 255)
+
+            opened = mplg.opening(objected, mplg.disk(5))
+
+            # cv2.imwrite(os.path.join("../tmp", file), opened * 255)
+
+            closed = mplg.closing(opened, mplg.disk(10))
+
+            # cv2.imwrite(os.path.join("../tmp", file), closed * 255)
+
+            output = closed * 255
             cv2.imwrite(os.path.join(mask_path, file), output)
 
-            img[filled == 0] = (0, 0, 0)
+            img[closed == 0] = (0, 0, 0)
             cv2.imwrite(os.path.join(parenchyma_path, file), img)
 
 
 if __name__ == '__main__':
-    function()
+    function(True)
+    function(False)

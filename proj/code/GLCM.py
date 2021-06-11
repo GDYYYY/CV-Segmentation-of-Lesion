@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 import skimage.morphology as mplg
+import skimage.measure as measure
 
 typeString = ['contrast', 'energy', 'entropy', 'homogeneity']
 
@@ -101,6 +102,15 @@ def checkWindow(w, threshold):
     return True
 
 
+def computeGray(w):
+    height, width = w.shape[:2]
+    sum = 0
+    for i in range(height):
+        for j in range(width):
+            sum += w[i][j]
+    return sum
+
+
 def focalSegment(path_isReticular, isReticular):
     if path_isReticular:
         if isReticular:
@@ -187,6 +197,7 @@ def focalSegment(path_isReticular, isReticular):
             # mask = mplg.opening(mask, mplg.disk(2))
             mask = mplg.closing(mask, mplg.disk(k))
             # mask = mplg.opening(mask, mplg.disk((window_h+window_w)/4))
+
             if isReticular:
                 for i in range(height):
                     for j in range(width):
@@ -278,6 +289,8 @@ def color(path_isReticular, isReticular):
             # 上色
             for i in range(row):
                 for j in range(col):
+                    if final_path == origin_path and np.abs(int(origin[i, j, 1]) - int(origin[i, j, 2])) > 50:
+                        continue
                     if result_gray[i][j] > 5:
                         if isReticular:
                             if origin[i, j, 2] > 185:
